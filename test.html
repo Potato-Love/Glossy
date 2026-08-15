@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GNU 공지 트래커</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --new: #dc2626;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #f0f0f0;
+      --muted: #9ca3af;
+      --border: #333333;
+      --accent: #60a5fa;
+      --new: #f87171;
+      --tag-bg: #1e2749;
+      --tag-text: #a5b4fc;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  header {
+    padding: 24px 16px 12px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    max-width: 860px;
+    margin: 12px auto 0;
+    padding: 0 16px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .tab-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  main {
+    max-width: 860px;
+    margin: 16px auto 60px;
+    padding: 0 16px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .card a.title {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.98rem;
+  }
+  .card a.title:hover { color: var(--accent); }
+  .badge-new {
+    display: inline-block;
+    color: var(--new);
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid var(--new);
+    border-radius: 6px;
+    padding: 1px 5px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .meta {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .meta span + span::before {
+    content: "·";
+    margin: 0 6px;
+  }
+  .desc {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .tags {
+    margin-top: 8px;
+  }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .empty, .loading {
+    color: var(--muted);
+    text-align: center;
+    padding: 40px 0;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>GNU 공지 트래커</h1>
+  <div class="subtitle" id="updatedAt">불러오는 중...</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="nerum">비교과 프로그램</button>
+  <button class="tab-btn" data-tab="sansi">산시알리미</button>
+</div>
+
+<main>
+  <section class="panel active" id="panel-nerum">
+    <div class="loading">불러오는 중...</div>
+  </section>
+  <section class="panel" id="panel-sansi">
+    <div class="loading">불러오는 중...</div>
+  </section>
+</main>
+
+<script>
+const NEW_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+function isNew(firstSeenAt) {
+  if (!firstSeenAt) return false;
+  const t = new Date(firstSeenAt).getTime();
+  return !Number.isNaN(t) && (Date.now() - t) < NEW_WINDOW_MS;
+}
+
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+function renderNerum(items) {
+  if (!items.length) return '<div class="empty">표시할 프로그램이 없습니다.</div>';
+  return items.map(item => `
+    <div class="card">
+      <a class="title" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">
+        ${isNew(item.first_seen_at) ? '<span class="badge-new">NEW</span>' : ''}${escapeHtml(item.title)}
+      </a>
+      <div class="meta">
+        <span>${escapeHtml(item.org)}</span>
+        ${item.type ? `<span>${escapeHtml(item.type)}</span>` : ''}
+        ${item.apply_period ? `<span>신청 ${escapeHtml(item.apply_period)}</span>` : ''}
+      </div>
+      ${item.desc ? `<div class="desc">${escapeHtml(item.desc)}</div>` : ''}
+      ${item.tags && item.tags.length ? `<div class="tags">${item.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderSansi(items) {
+  if (!items.length) return '<div class="empty">표시할 게시글이 없습니다.</div>';
+  return items.map(item => `
+    <div class="card">
+      <a class="title" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">
+        ${isNew(item.first_seen_at) ? '<span class="badge-new">NEW</span>' : ''}${escapeHtml(item.title)}
+      </a>
+      <div class="meta">
+        <span>${escapeHtml(item.author)}</span>
+        <span>${escapeHtml(item.date)}</span>
+        <span>조회 ${escapeHtml(item.views)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+let latestFetchedAt = null;
+
+function trackFetchedAt(items) {
+  for (const item of items) {
+    if (item.fetched_at && (!latestFetchedAt || item.fetched_at > latestFetchedAt)) {
+      latestFetchedAt = item.fetched_at;
+    }
+  }
+}
+
+function updateHeader() {
+  const el = document.getElementById('updatedAt');
+  if (!latestFetchedAt) {
+    el.textContent = '데이터 없음';
+    return;
+  }
+  const d = new Date(latestFetchedAt);
+  el.textContent = `마지막 업데이트: ${d.toLocaleString('ko-KR')}`;
+}
+
+async function loadData() {
+  try {
+    const [nerumRes, sansiRes] = await Promise.all([
+      fetch('./data/nerum.json', { cache: 'no-store' }),
+      fetch('./data/sansi.json', { cache: 'no-store' }),
+    ]);
+    const nerum = nerumRes.ok ? await nerumRes.json() : [];
+    const sansi = sansiRes.ok ? await sansiRes.json() : [];
+
+    trackFetchedAt(nerum);
+    trackFetchedAt(sansi);
+    updateHeader();
+
+    document.getElementById('panel-nerum').innerHTML = renderNerum(nerum);
+    document.getElementById('panel-sansi').innerHTML = renderSansi(sansi);
+  } catch (err) {
+    document.getElementById('updatedAt').textContent = '데이터를 불러오지 못했습니다.';
+    console.error(err);
+  }
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
+loadData();
+</script>
+</body>
+</html>
