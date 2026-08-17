@@ -1,27 +1,28 @@
-import "../../pages/TranslatePage.css";
+import { FileText, Image, Type } from "lucide-react";
 
-function ModeTabs({mode, setMode}){
-    return(
-        <div className="modeTabs">
-            <button className={mode === "text" ? "mode-tab active" : "mode-tab"}
-            onClick={() => setMode("text")}
-            >
-                텍스트
-            </button>
+const modes = [
+  { id: "text", label: "텍스트", icon: Type },
+  { id: "document", label: "문서", icon: FileText },
+  { id: "image", label: "사진", icon: Image },
+];
 
-            <button className={mode === "document" ? "mode-tab active" : "mode-tab"}
-            onClick={() => setMode("document")}
-            >
-                문서
-            </button>
-
-            <button className={mode === "image" ? "mode-tab active" : "mode-tab"}
-            onClick={() => setMode("image")}
-            >
-                사진
-            </button>
-        </div>
-    )
+export default function ModeTabs({ mode, onChange }) {
+  return (
+    <div className="mode-tabs" aria-label="번역 입력 방식">
+      {modes.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.id}
+            className={`mode-tab${mode === item.id ? " active" : ""}`}
+            onClick={() => onChange(item.id)}
+            aria-pressed={mode === item.id}
+          >
+            <Icon size={18} strokeWidth={1.8} />
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
-
-export default ModeTabs;

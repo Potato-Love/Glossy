@@ -1,0 +1,247 @@
+.onboarding-page {
+  min-height: 100vh;
+  padding: 36px clamp(24px, 6vw, 96px);
+  background: #ffffff;
+}
+
+.onboarding-brand {
+  color: var(--color-primary);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.intro-layout {
+  width: min(1120px, 100%);
+  min-height: calc(100vh - 130px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.85fr);
+  align-items: center;
+  gap: clamp(48px, 8vw, 120px);
+}
+
+.intro-copy {
+  max-width: 590px;
+}
+
+.intro-eyebrow {
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.intro-copy h1 {
+  margin: 18px 0 22px;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.13;
+  letter-spacing: 0;
+}
+
+.intro-copy > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.intro-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 38px;
+}
+
+.step-dots {
+  display: flex;
+  gap: 7px;
+  margin-top: 32px;
+}
+
+.step-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #d9dadd;
+  transition: width 160ms ease;
+}
+
+.step-dots span.active {
+  width: 25px;
+  background: var(--color-primary);
+}
+
+.intro-visual {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px;
+  border: 1px solid #dfe1e5;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.visual-icon {
+  width: 130px;
+  height: 130px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 38px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.visual-line {
+  width: 62%;
+  height: 12px;
+  margin-bottom: 13px;
+  border-radius: 3px;
+  background: #dfe1e5;
+}
+
+.visual-line.wide {
+  width: 88%;
+}
+
+.visual-translation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 36px;
+  padding-top: 25px;
+  border-top: 1px solid #dbdde1;
+}
+
+.visual-translation strong {
+  color: var(--color-primary);
+}
+
+.setup-page {
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-muted);
+}
+
+.setup-shell {
+  width: min(100%, 650px);
+  padding: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
+.setup-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #ececef;
+}
+
+.setup-progress span {
+  height: 100%;
+  display: block;
+  background: var(--color-primary);
+}
+
+.setup-heading {
+  margin: 32px 0;
+}
+
+.setup-heading > span {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.setup-heading h1 {
+  margin: 9px 0 8px;
+  font-size: 28px;
+}
+
+.setup-heading p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.setup-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.setup-error {
+  margin-top: 14px;
+}
+
+.team-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.team-mode-options > button {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 105px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  text-align: left;
+}
+
+.team-mode-options > button.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: #126fbf;
+}
+
+.team-mode-options span {
+  display: grid;
+  gap: 6px;
+}
+
+.team-mode-options small {
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.team-setup-form {
+  margin-top: 24px;
+}
+
+@media (max-width: 800px) {
+  .intro-layout {
+    grid-template-columns: 1fr;
+    padding: 60px 0;
+  }
+
+  .intro-visual {
+    min-height: 300px;
+    order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .onboarding-page {
+    padding: 24px 18px;
+  }
+
+  .intro-copy h1 {
+    font-size: 38px;
+  }
+
+  .intro-visual {
+    padding: 30px;
+  }
+
+  .setup-shell {
+    padding: 26px 20px;
+  }
+
+  .team-mode-options {
+    grid-template-columns: 1fr;
+  }
+}

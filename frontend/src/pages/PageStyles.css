@@ -1,0 +1,269 @@
+.filter-search {
+  width: min(100%, 320px);
+  position: relative;
+}
+
+.filter-search svg {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.filter-search input {
+  padding-left: 40px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.profile-card {
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
+.profile-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.profile-identity {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-identity h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.profile-identity p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.card-actions .icon-button {
+  width: 34px;
+  height: 34px;
+}
+
+.detail-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.detail-row dt {
+  color: var(--color-text-secondary);
+}
+
+.detail-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-section {
+  padding: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
+.settings-section + .settings-section {
+  margin-top: 18px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.section-heading h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+}
+
+.section-heading p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.inline-form .field {
+  flex: 1;
+}
+
+.copy-field {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-field input {
+  min-width: 0;
+  flex: 1;
+}
+
+.history-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.85fr) minmax(380px, 1.15fr);
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.history-list {
+  border-right: 1px solid var(--color-border);
+  background: #fafafa;
+}
+
+.history-item {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  text-align: left;
+}
+
+.history-item:hover,
+.history-item.active {
+  background: #ffffff;
+}
+
+.history-item.active {
+  box-shadow: inset 3px 0 var(--color-primary);
+}
+
+.history-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  display: flex;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.history-detail {
+  padding: 28px;
+}
+
+.history-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.history-detail-header h2 {
+  margin: 0 0 7px;
+  font-size: 20px;
+}
+
+.history-detail-header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.translation-detail-block + .translation-detail-block {
+  margin-top: 24px;
+}
+
+.translation-detail-block h3 {
+  margin: 0 0 10px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.translation-detail-block p {
+  margin: 0;
+  padding: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.term-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+@media (max-width: 840px) {
+  .content-grid,
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .history-list {
+    max-height: 330px;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 560px) {
+  .inline-form,
+  .copy-field {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-section,
+  .history-detail {
+    padding: 20px;
+  }
+}
