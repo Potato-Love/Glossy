@@ -125,3 +125,49 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
+
+.source-panel textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 330px;
+
+  padding: 44px 28px;
+
+  border: none;
+  outline: none;
+  resize: none;
+
+  background: transparent;
+
+  font-size: 28px;
+  line-height: 1.5;
+}
+
+.result-placeholder {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+}
+
+.result-panel p {
+  margin: 0;
+}
+
+.translate-action {
+  display: flex;
+  justify-content: flex-end;
+
+  margin-top: 16px;
+}
+
+.translate-button {
+  padding: 12px 28px;
+
+  border: none;
+  border-radius: var(--radius-sm);
+
+  background-color: var(--color-primary);
+  color: white;
+
+  font-weight: 600;
+}

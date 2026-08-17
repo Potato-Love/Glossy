@@ -1,6 +1,16 @@
+import { useState } from "react";
 import "./TranslatePage.css";
 
 function TranslatePage() {
+  const [text, setText] = useState("");
+  const [result, setResult] = useState("");
+
+  function handleTranslate() {
+    if (!text.trim()) return;
+
+    setResult('Hello, we are team "Poongchadoligi".');
+  }
+
   return (
     <div className="translate-page">
       <div className="translate-container">
@@ -34,22 +44,45 @@ function TranslatePage() {
 
           <div className="translation-content">
             <div className="source-panel">
-              안녕하세요, 저희는 풍차돌리기 팀입니다.
+              <textarea
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder="번역할 내용을 입력하세요."
+              />
             </div>
 
             <div className="result-panel">
-              Hello, we are team{" "}
-              <span className="glossary-highlight">
-                "Poongchadoligi"
-              </span>
-              .
+              {result ? (
+                <p>
+                  Hello, we are team{" "}
+                  <span className="glossary-highlight">
+                    "Poongchadoligi"
+                  </span>
+                  .
+                </p>
+              ) : (
+                <p className="result-placeholder">
+                  번역 결과가 여기에 표시됩니다.
+                </p>
+              )}
             </div>
           </div>
         </section>
 
-        <section className="term-suggestion">
-          AI 감지 단어 영역
-        </section>
+        <div className="translate-action">
+          <button
+            className="translate-button"
+            onClick={handleTranslate}
+          >
+            번역하기
+          </button>
+        </div>
+
+        {result && (
+          <section className="term-suggestion">
+            AI 감지 단어 영역
+          </section>
+        )}
       </div>
     </div>
   );
