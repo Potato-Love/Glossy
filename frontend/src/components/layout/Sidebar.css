@@ -1,6 +1,6 @@
 .sidebar {
   width: var(--sidebar-width);
-  height: 100vh;
+  min-height: 100vh;
 
   position: fixed;
   top: 0;
@@ -66,4 +66,4 @@
 .sidebar-bottom {
   padding-top: 16px;
   border-top: 1px solid var(--color-border);
-}
+} 
