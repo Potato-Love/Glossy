@@ -127,7 +127,7 @@ async def _suggest_image_terms(
             existing_terms = []
 
     request = SuggestTermsRequest(
-        text=text,
+        text=text[:10000],
         source_language=source_language,
         target_language=target_language,
         existing_terms=[
