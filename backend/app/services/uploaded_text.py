@@ -29,6 +29,9 @@ async def extract_text_from_upload(file: UploadFile) -> str:
     return _decode_text(payload)
 
 
+MAX_PARAGRAPH_CHARS = 2800  # stays under TranslateRequest.text's max_length (3000)
+
+
 def split_into_paragraphs(text: str, limit: int = 8) -> list[str]:
     normalized = re.sub(r"\r\n?", "\n", text).strip()
     if not normalized:
@@ -43,7 +46,17 @@ def split_into_paragraphs(text: str, limit: int = 8) -> list[str]:
         sentences = re.split(r"(?<=[.!?。！？])\s+|\n+", normalized)
         paragraphs = [sentence.strip() for sentence in sentences if sentence.strip()]
 
-    return paragraphs[:limit]
+    chunks: list[str] = []
+    for paragraph in paragraphs:
+        chunks.extend(_chunk_by_length(paragraph, MAX_PARAGRAPH_CHARS))
+
+    return chunks[:limit]
+
+
+def _chunk_by_length(text: str, max_chars: int) -> list[str]:
+    if len(text) <= max_chars:
+        return [text]
+    return [text[i : i + max_chars] for i in range(0, len(text), max_chars)]
 
 
 def count_words(text: str) -> int:
