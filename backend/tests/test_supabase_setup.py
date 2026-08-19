@@ -25,7 +25,7 @@ class SupabaseSetupTest(unittest.TestCase):
         )
 
     def test_openai_placeholder_is_not_treated_as_configured(self) -> None:
-        settings = Settings(_env_file=None, OPENAI_API_KEY="sk-proj-replace-me")
+        settings = Settings(_env_file=None, OPENAI_API_KEY="replace-with-openai-api-key")
 
         self.assertIsNone(settings.openai_api_key)
 
@@ -33,18 +33,18 @@ class SupabaseSetupTest(unittest.TestCase):
         self.assertIn(
             "transaction pooler",
             describe_connection_url(
-                "postgresql://postgres.ref:pw@aws-0.ap.pooler.supabase.com:6543/postgres"
+                "postgresql://postgres.ref@aws-0.ap.pooler.supabase.com:6543/postgres"
             ),
         )
         self.assertIn(
             "session pooler",
             describe_connection_url(
-                "postgresql://postgres.ref:pw@aws-0.ap.pooler.supabase.com:5432/postgres"
+                "postgresql://postgres.ref@aws-0.ap.pooler.supabase.com:5432/postgres"
             ),
         )
         self.assertIn(
             "direct",
-            describe_connection_url("postgresql://postgres:pw@db.ref.supabase.co:5432/postgres"),
+            describe_connection_url("postgresql://postgres@db.ref.supabase.co:5432/postgres"),
         )
 
     def test_seed_migration_is_opt_in(self) -> None:

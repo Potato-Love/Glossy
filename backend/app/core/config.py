@@ -60,7 +60,7 @@ class Settings(BaseSettings):
         if value is None:
             return None
         cleaned = value.strip()
-        if not cleaned or cleaned == "sk-proj-replace-me":
+        if not cleaned or cleaned == "replace-with-openai-api-key":
             return None
         return cleaned
 
