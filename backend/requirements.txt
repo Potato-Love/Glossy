@@ -1,0 +1,8 @@
+asyncpg>=0.31,<1
+fastapi>=0.141,<1
+openai>=3.2,<4
+pypdf>=6.16,<7
+pydantic-settings>=2.15,<3
+python-multipart>=0.0.32,<1
+python-dotenv>=1.2,<2
+uvicorn[standard]>=0.52,<1
