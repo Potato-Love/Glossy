@@ -5,7 +5,10 @@ from xml.etree import ElementTree
 
 from fastapi import UploadFile
 
+from app.schemas import MAX_TRANSLATE_TEXT_CHARS
+
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+MAX_PARAGRAPH_CHARS = MAX_TRANSLATE_TEXT_CHARS - 200
 
 
 class UnsupportedUpload(RuntimeError):
@@ -27,9 +30,6 @@ async def extract_text_from_upload(file: UploadFile) -> str:
         return _extract_pdf_text(payload)
 
     return _decode_text(payload)
-
-
-MAX_PARAGRAPH_CHARS = 2800  # stays under TranslateRequest.text's max_length (3000)
 
 
 def split_into_paragraphs(text: str, limit: int = 8) -> list[str]:

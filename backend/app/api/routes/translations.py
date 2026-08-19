@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import ValidationError
 
 from app.db import DatabaseUnavailable
 from app.repositories import ContactRepository, MemoryRepository, TermRepository
@@ -47,19 +48,11 @@ async def translate(payload: TranslateRequest) -> TranslateResponse:
 
     memory_id = None
     if payload.save_to_memory:
+        memory_payload = _build_memory_payload(payload, result.translation)
         try:
-            saved = await MemoryRepository().create(
-                MemoryCreate(
-                    source_text=payload.text,
-                    source_language=payload.source_language,
-                    target_language=payload.target_language,
-                    tone=payload.tone,
-                    purpose=payload.purpose,
-                    contact_id=payload.contact_id,
-                    result_text=result.translation,
-                )
-            )
-            memory_id = saved.id
+            if memory_payload is not None:
+                saved = await MemoryRepository().create(memory_payload)
+                memory_id = saved.id
         except DatabaseUnavailable:
             memory_id = None
 
@@ -146,6 +139,21 @@ async def _load_contact(payload: TranslateRequest) -> ContactCreate | None:
     try:
         return await ContactRepository().get(payload.contact_id)
     except DatabaseUnavailable:
+        return None
+
+
+def _build_memory_payload(payload: TranslateRequest, result_text: str) -> MemoryCreate | None:
+    try:
+        return MemoryCreate(
+            source_text=payload.text,
+            source_language=payload.source_language,
+            target_language=payload.target_language,
+            tone=payload.tone,
+            purpose=payload.purpose,
+            contact_id=payload.contact_id,
+            result_text=result_text,
+        )
+    except ValidationError:
         return None
 
 

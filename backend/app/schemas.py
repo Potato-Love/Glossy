@@ -6,6 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 SourceLanguage = Literal["auto", "ko", "en", "de", "fr", "ja", "zh"]
 TargetLanguage = Literal["ko", "en", "de", "fr", "ja", "zh"]
+MAX_TRANSLATE_TEXT_CHARS = 3000
+MAX_MEMORY_RESULT_CHARS = 10000
+MAX_SUGGEST_TEXT_CHARS = 10000
 SUPPORTED_SOURCE_LANGUAGES = frozenset(("auto", "ko", "en", "de", "fr", "ja", "zh"))
 SUPPORTED_TARGET_LANGUAGES = frozenset(("ko", "en", "de", "fr", "ja", "zh"))
 LANGUAGE_LABELS = {
@@ -141,7 +144,7 @@ class ModelUsage(BaseModel):
 
 
 class TranslateRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=3000)
+    text: str = Field(..., min_length=1, max_length=MAX_TRANSLATE_TEXT_CHARS)
     source_language: SourceLanguage = "auto"
     target_language: TargetLanguage = "en"
     tone: Tone = "polite"
@@ -189,13 +192,13 @@ class CompareTranslateResponse(BaseModel):
 
 
 class MemoryCreate(BaseModel):
-    source_text: str = Field(..., min_length=1, max_length=3000)
+    source_text: str = Field(..., min_length=1, max_length=MAX_TRANSLATE_TEXT_CHARS)
     source_language: SourceLanguage = "auto"
     target_language: TargetLanguage
     tone: Tone
     purpose: Purpose
     contact_id: UUID | None = None
-    result_text: str = Field(..., min_length=1, max_length=4000)
+    result_text: str = Field(..., min_length=1, max_length=MAX_MEMORY_RESULT_CHARS)
 
     @field_validator("source_text", "result_text")
     @classmethod
@@ -234,7 +237,7 @@ class TermSuggestionCandidate(BaseModel):
 
 
 class SuggestTermsRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=10000)
+    text: str = Field(..., min_length=1, max_length=MAX_SUGGEST_TEXT_CHARS)
     source_language: SourceLanguage = "auto"
     target_language: TargetLanguage = "en"
     max_suggestions: int = Field(default=8, ge=1, le=20)
@@ -248,7 +251,7 @@ class SuggestTermsRequest(BaseModel):
 
 
 class TermSuggestionCreate(TermSuggestionCandidate):
-    document_text: str = Field(..., min_length=1, max_length=10000)
+    document_text: str = Field(..., min_length=1, max_length=MAX_SUGGEST_TEXT_CHARS)
 
 
 class TermSuggestionRead(TermSuggestionCreate):

@@ -1,8 +1,15 @@
+import asyncio
 import unittest
+from types import SimpleNamespace
 
-from app.api.routes import contacts, documents, terms, translations
+from app.api.routes import contacts, documents, images, terms, translations
 from app.main import app
-from app.schemas import MemoryCreate, TranslateRequest
+from app.schemas import (
+    MAX_MEMORY_RESULT_CHARS,
+    MAX_SUGGEST_TEXT_CHARS,
+    MemoryCreate,
+    TranslateRequest,
+)
 from app.services.openai_translation import TranslationResult
 from asyncpg.exceptions import UniqueViolationError
 from fastapi.testclient import TestClient
@@ -74,6 +81,48 @@ class ApiContractTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(body["translation"], "1 terms: 풍차돌리기 팀의 글로시 MVP")
         self.assertEqual(body["applied_terms"][0]["target"], "Pungchadolligi")
+
+    def test_save_to_memory_skips_oversized_translation_memory_without_failing(self) -> None:
+        original_translate = translations.TranslationService.translate
+        original_create = translations.MemoryRepository.create
+        create_calls = []
+        long_translation = "x" * (MAX_MEMORY_RESULT_CHARS + 1)
+
+        async def fake_translate(self, payload, terms, contact):
+            del self, payload, terms, contact
+            return TranslationResult(
+                translation=long_translation,
+                model="fake-model",
+                usage=None,
+            )
+
+        async def fake_create(self, payload):
+            del self
+            create_calls.append(payload)
+            raise AssertionError("Oversized memory payload should not be saved")
+
+        translations.TranslationService.translate = fake_translate
+        translations.MemoryRepository.create = fake_create
+        try:
+            response = self.client.post(
+                "/api/v1/translations/translate",
+                json={
+                    "text": "긴 번역 결과 저장 테스트",
+                    "source_language": "ko",
+                    "target_language": "en",
+                    "use_memory": False,
+                    "save_to_memory": True,
+                },
+            )
+        finally:
+            translations.TranslationService.translate = original_translate
+            translations.MemoryRepository.create = original_create
+
+        body = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(body["translation"], long_translation)
+        self.assertIsNone(body["memory_id"])
+        self.assertEqual(create_calls, [])
 
     def test_compare_endpoint_shape(self) -> None:
         original_translate = translations.TranslationService.translate
@@ -211,6 +260,31 @@ class ApiContractTest(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
+
+    def test_image_term_suggestions_truncate_oversized_text(self) -> None:
+        original_suggest = images.GlossarySuggestionService.suggest_terms
+        captured_lengths = []
+
+        async def fake_suggest_terms(self, payload, existing_terms):
+            del self, existing_terms
+            captured_lengths.append(len(payload.text))
+            return SimpleNamespace(candidates=[], model="fake-model", usage=None)
+
+        images.GlossarySuggestionService.suggest_terms = fake_suggest_terms
+        try:
+            suggestions = asyncio.run(
+                images._suggest_image_terms(
+                    "x" * (MAX_SUGGEST_TEXT_CHARS + 500),
+                    source_language="ko",
+                    target_language="en",
+                    glossary_enabled=False,
+                )
+            )
+        finally:
+            images.GlossarySuggestionService.suggest_terms = original_suggest
+
+        self.assertEqual(suggestions, [])
+        self.assertEqual(captured_lengths, [MAX_SUGGEST_TEXT_CHARS])
 
 
 if __name__ == "__main__":

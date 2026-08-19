@@ -6,6 +6,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from app.db import DatabaseUnavailable
 from app.repositories import ContactRepository, TermRepository
 from app.schemas import (
+    MAX_SUGGEST_TEXT_CHARS,
     SUPPORTED_SOURCE_LANGUAGES,
     SUPPORTED_TARGET_LANGUAGES,
     ContactCreate,
@@ -185,7 +186,7 @@ async def _suggest_document_terms(
     existing_terms: list[TermRead],
 ) -> list[dict[str, object]]:
     request = SuggestTermsRequest(
-        text=text[:10000],
+        text=text[:MAX_SUGGEST_TEXT_CHARS],
         source_language=_normalize_source_language(source_language),
         target_language=_normalize_target_language(target_language),
         existing_terms=[
