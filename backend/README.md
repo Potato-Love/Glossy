@@ -42,7 +42,6 @@ the backend is deployed:
 
 ```txt
 VITE_API_URL=https://your-backend-domain.example.com/api/v1
-VITE_USE_MOCK_DOCUMENTS=false
 ```
 
 ## Database
@@ -75,39 +74,42 @@ Run the migrations:
 python scripts/apply_migrations.py
 ```
 
-Optional demo seed data:
-
-```bash
-python scripts/apply_migrations.py --seed
-```
-
 You can also run SQL manually in Supabase SQL Editor, or through `psql`.
 Apply the schema migrations in filename order:
 
 ```bash
 psql "$env:DATABASE_URL" -f migrations/001_init.sql
 psql "$env:DATABASE_URL" -f migrations/003_expand_language_codes.sql
-```
-
-Optional demo seed data:
-
-```bash
-psql "$env:DATABASE_URL" -f migrations/002_seed_demo.sql
+psql "$env:DATABASE_URL" -f migrations/004_glossary_context.sql
+psql "$env:DATABASE_URL" -f migrations/005_translation_strategy_preferences.sql
+psql "$env:DATABASE_URL" -f migrations/006_recipient_translation_context.sql
+psql "$env:DATABASE_URL" -f migrations/007_auth_and_teams.sql
+psql "$env:DATABASE_URL" -f migrations/008_translation_history.sql
 ```
 
 Tables:
 
 - `terms`: team glossary
-- `contacts`: recipient tone/context profiles
+- `contacts`: team-scoped recipient profiles with country, tone style, and communication preferences
 - `translation_memories`: approved translations for reuse
+- `translation_history`: team-scoped text, document, and image translation history
 - `term_suggestions`: AI-suggested glossary candidates awaiting approval
+- `strategy_preferences`: learned team/personal defaults by term category and language pair
+- `users`, `auth_sessions`: nickname accounts and revocable seven-day sessions
+- `teams`, `team_memberships`: team membership, owner/member roles, and invitations
 
 ## Key Endpoints
 
 - `GET /health`
 - `GET /health/db`
+- `POST /api/v1/auth/signup`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
+- `GET /api/v1/teams`
+- `POST /api/v1/teams`
+- `POST /api/v1/teams/join`
 - `POST /api/v1/translations/translate`
-- `POST /api/v1/translations/compare`
 - `POST /api/v1/translations/memories`
 - `POST /api/v1/documents/translate`
 - `POST /api/v1/documents/compare`
@@ -116,12 +118,25 @@ Tables:
 - `GET /api/v1/term-suggestions`
 - `POST /api/v1/term-suggestions/{suggestion_id}/approve`
 - `POST /api/v1/term-suggestions/{suggestion_id}/reject`
+- `POST /api/v1/term-strategies/preview`
+- `GET /api/v1/strategy-preferences`
+- `POST /api/v1/strategy-preferences`
+- `DELETE /api/v1/strategy-preferences/{preference_id}`
 - `GET /api/v1/terms`
 - `POST /api/v1/terms`
 - `GET /api/v1/contacts`
 - `POST /api/v1/contacts`
+- `POST /api/v1/contacts/extract`
+- `GET /api/v1/history`
+- `POST /api/v1/history`
+- `PATCH /api/v1/history/{history_id}`
+- `DELETE /api/v1/history/{history_id}`
 
 See `API_CONTRACT.md` for frontend integration examples.
+
+Document translation processes up to 10,000 extracted characters in one structured
+OpenAI request so terminology and tone stay consistent across paragraphs. It rejects
+oversized documents explicitly and reports provider rate limits as HTTP `429`.
 
 Supported language codes:
 

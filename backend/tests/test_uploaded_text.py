@@ -38,6 +38,14 @@ class UploadedTextTest(unittest.TestCase):
         self.assertEqual(len(paragraphs), 2)
         self.assertLessEqual(max(len(paragraph) for paragraph in paragraphs), MAX_TRANSLATE_TEXT_CHARS)
 
+    def test_split_does_not_silently_drop_paragraphs(self) -> None:
+        source = "\n\n".join(f"{index}번째 문단" for index in range(1, 13))
+
+        paragraphs = split_into_paragraphs(source)
+
+        self.assertEqual(len(paragraphs), 12)
+        self.assertEqual(paragraphs[-1], "12번째 문단")
+
     def test_count_words(self) -> None:
         self.assertEqual(count_words("글로시 MVP QA"), 3)
 

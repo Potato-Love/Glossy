@@ -17,7 +17,12 @@ REQUIRED_TABLES = (
     "terms",
     "contacts",
     "translation_memories",
+    "translation_history",
     "term_suggestions",
+    "users",
+    "auth_sessions",
+    "teams",
+    "team_memberships",
 )
 
 

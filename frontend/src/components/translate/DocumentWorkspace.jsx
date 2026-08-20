@@ -9,35 +9,65 @@ import {
   Pencil,
   Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { compareTranslations, translateDocument } from "../../api/documents";
+import { createHistory, updateHistory } from "../../api/history";
+import { rejectSuggestion } from "../../api/suggestions";
 import DetectedTermCard from "./DetectedTermCard";
 import FileDropzone from "./FileDropzone";
 import TranslationSettingsBar from "./TranslationSettingsBar";
+import { HighlightedText } from "./HighlightedText";
+import { replaceSuggestionHighlights } from "./highlightUtils";
 
 const documentAccept = ".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain";
 const supportedExtensions = ["pdf", "docx", "txt"];
-const processingSteps = ["텍스트 추출", "문단 단위 분할", "용어집·상대 프로필 적용", "LLM 번역"];
+const processingSteps = ["텍스트 추출", "문서 전체 맥락 분석", "용어집·상대 프로필 적용", "LLM 번역"];
 
 function supportedFiles(files) {
   return files.filter((file) => supportedExtensions.includes(file.name.split(".").pop()?.toLowerCase()));
 }
 
-function ComparisonTermCard({ item, onAdd }) {
+function ComparisonTermCard({ item, onAdd, onPreview }) {
   const [target, setTarget] = useState(item.recommendedTarget);
   const [strategy, setStrategy] = useState(item.recommendedStrategy);
+  const [translationStrategy, setTranslationStrategy] = useState(item.translationStrategy || "custom");
   const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState("");
+  const [addError, setAddError] = useState("");
 
-  function handleAdd() {
+  async function handleTransliteration() {
+    setAddError("");
+    try {
+      const preview = await onPreview({ source: item.source, strategy: "transliteration" });
+      setStrategy("translate");
+      setTranslationStrategy("transliteration");
+      setTarget(preview.target);
+      setEditing(false);
+    } catch (error) {
+      setAddError(error instanceof Error ? error.message : "발음 표기를 만들지 못했습니다.");
+    }
+  }
+
+  async function handleAdd() {
     if (!target.trim()) return;
-    const result = onAdd({
-      source: item.source,
-      target: strategy === "preserve" ? item.source : target.trim(),
-      strategy,
-      kind: `${item.kind} · 번역본 비교에서 발견`,
-    });
-    setStatus(result === "exists" ? "이미 등록됨" : "추가 완료");
+    setStatus("추가 중");
+    setAddError("");
+    try {
+      const result = await onAdd({
+        source: item.source,
+        target: strategy === "preserve" ? item.source : target.trim(),
+        strategy,
+        translationStrategy,
+        termCategory: item.termCategory || "other",
+        creationMethod: translationStrategy === "transliteration" || translationStrategy === "semantic_translation"
+          ? translationStrategy : "direct_edit",
+        kind: `${item.kind} · 번역본 비교에서 발견`,
+      });
+      setStatus(result === "exists" ? "이미 등록됨" : "추가 완료");
+    } catch (error) {
+      setStatus("");
+      setAddError(error instanceof Error ? error.message : "용어집에 추가하지 못했습니다.");
+    }
   }
 
   return (
@@ -53,23 +83,25 @@ function ComparisonTermCard({ item, onAdd }) {
               type="radio"
               name={`variant-${item.id}`}
               checked={strategy === "translate" && target === variant.target}
-              onChange={() => { setStrategy("translate"); setTarget(variant.target); setEditing(false); }}
+              onChange={() => { setStrategy("translate"); setTranslationStrategy("custom"); setTarget(variant.target); setEditing(false); }}
             />
             <span><strong>{variant.target}</strong><small>{variant.documentName} · {variant.count}회</small></span>
           </label>
         ))}
       </div>
       <div className="comparison-decision">
-        <button type="button" className={strategy === "preserve" ? "active" : ""} onClick={() => { setStrategy("preserve"); setTarget(item.source); setEditing(false); }}>원문 유지</button>
-        <button type="button" className={editing ? "active" : ""} onClick={() => { setStrategy("translate"); setEditing(true); }}><Pencil size={15} /> 직접 수정</button>
+        <button type="button" className={strategy === "preserve" ? "active" : ""} onClick={() => { setStrategy("preserve"); setTranslationStrategy("preserve"); setTarget(item.source); setEditing(false); }}>원문 유지</button>
+        <button type="button" className={translationStrategy === "transliteration" ? "active" : ""} onClick={handleTransliteration}>발음대로</button>
+        <button type="button" className={editing ? "active" : ""} onClick={() => { setStrategy("translate"); setTranslationStrategy("custom"); setEditing(true); }}><Pencil size={15} /> 직접 수정</button>
         {editing && <input value={target} onChange={(event) => setTarget(event.target.value)} aria-label={`${item.source} 지정 번역`} autoFocus />}
         <button type="button" className="add-term-button" onClick={handleAdd} disabled={Boolean(status)}><BookPlus size={16} /> {status || "팀 용어집에 추가"}</button>
       </div>
+      {addError && <p className="form-error">{addError}</p>}
     </article>
   );
 }
 
-export default function DocumentWorkspace({ options, settingsProps, onAddTerm }) {
+export default function DocumentWorkspace({ options, settingsProps, onAddTerm, onPreview, onHistorySaved }) {
   const [workflow, setWorkflow] = useState("translate");
   const [sourceFile, setSourceFile] = useState(null);
   const [translationFiles, setTranslationFiles] = useState([]);
@@ -78,8 +110,39 @@ export default function DocumentWorkspace({ options, settingsProps, onAddTerm })
   const [translationResult, setTranslationResult] = useState(null);
   const [comparisonResult, setComparisonResult] = useState(null);
   const [error, setError] = useState("");
+  const lastHistoryTextRef = useRef("");
+  const historyTimerRef = useRef(null);
 
   const processing = status === "processing";
+
+  useEffect(() => {
+    if (!translationResult?.historyId) return undefined;
+    const translatedText = translationResult.translatedParagraphs.map((item) => item.target).join("\n\n");
+    if (translatedText === lastHistoryTextRef.current) return undefined;
+    window.clearTimeout(historyTimerRef.current);
+    historyTimerRef.current = window.setTimeout(async () => {
+      try {
+        await updateHistory(translationResult.historyId, { translatedText });
+        lastHistoryTextRef.current = translatedText;
+        onHistorySaved?.();
+      } catch (historyError) {
+        setError(historyError instanceof Error ? historyError.message : "문서 히스토리를 수정하지 못했습니다.");
+      }
+    }, 600);
+    return () => window.clearTimeout(historyTimerRef.current);
+  }, [onHistorySaved, translationResult]);
+
+  useEffect(() => {
+    setTranslationResult(null);
+    setComparisonResult(null);
+    setStatus("idle");
+  }, [
+    options.sourceLanguage,
+    options.targetLanguage,
+    options.recipientId,
+    options.teamGlossaryEnabled,
+    options.personalGlossaryEnabled,
+  ]);
 
   function updateSingleFile(files) {
     if (!files.length) {
@@ -145,7 +208,36 @@ export default function DocumentWorkspace({ options, settingsProps, onAddTerm })
       return;
     }
     const result = await runWithProgress(() => translateDocument({ file: sourceFile, ...options }));
-    if (result) setTranslationResult(result);
+    if (result) {
+      lastHistoryTextRef.current = result.translatedParagraphs.map((item) => item.target).join("\n\n");
+      setTranslationResult(result);
+      onHistorySaved?.();
+    }
+  }
+
+  async function retryHistorySave() {
+    if (!translationResult) return;
+    try {
+      const appliedTerms = [...new Set(translationResult.translatedParagraphs.flatMap((paragraph) =>
+        (paragraph.appliedTerms || []).map((term) => `${term.source} → ${term.target || term.source}`),
+      ))];
+      const saved = await createHistory({
+        mode: "document",
+        source_language: options.sourceLanguage,
+        target_language: options.targetLanguage,
+        source_text: translationResult.translatedParagraphs.map((item) => item.source).join("\n\n"),
+        translated_text: translationResult.translatedParagraphs.map((item) => item.target).join("\n\n"),
+        recipient_id: /^[0-9a-f-]{36}$/i.test(options.recipientId) ? options.recipientId : null,
+        recipient_name: options.recipient?.name || null,
+        file_name: translationResult.document.name,
+        applied_terms: appliedTerms,
+      });
+      lastHistoryTextRef.current = translationResult.translatedParagraphs.map((item) => item.target).join("\n\n");
+      setTranslationResult((current) => ({ ...current, historyId: saved.id, historyWarning: null }));
+      onHistorySaved?.();
+    } catch (historyError) {
+      setError(historyError instanceof Error ? historyError.message : "문서 히스토리를 저장하지 못했습니다.");
+    }
   }
 
   async function handleCompareDocuments() {
@@ -168,6 +260,65 @@ export default function DocumentWorkspace({ options, settingsProps, onAddTerm })
     setTranslationFiles([]);
     setError("");
     setStatus("idle");
+  }
+
+  function resolveTranslationSuggestion(id) {
+    setTranslationResult((current) => current
+      ? {
+          ...current,
+          suggestions: current.suggestions.filter((candidate) => candidate.id !== id),
+          translatedParagraphs: current.translatedParagraphs.map((paragraph) => ({
+            ...paragraph,
+            highlights: {
+              source: (paragraph.highlights?.source || []).map((item) => item.suggestion_id === id
+                ? { ...item, state: "applied", suggestion_id: null }
+                : item),
+              translation: (paragraph.highlights?.translation || []).map((item) => item.suggestion_id === id
+                ? { ...item, state: "applied", suggestion_id: null }
+                : item),
+            },
+          })),
+        }
+      : current);
+  }
+
+  function handleSuggestionTargetChange(id, target, translationStrategy, creationMethod) {
+    const strategy = translationStrategy === "preserve" ? "preserve" : "translate";
+    setTranslationResult((current) => current ? {
+      ...current,
+      suggestions: current.suggestions.map((candidate) => candidate.id === id
+        ? {
+            ...candidate,
+            target,
+            recommendedStrategy: strategy,
+            translationStrategy,
+            creationMethod: creationMethod || "direct_edit",
+          }
+        : candidate),
+      translatedParagraphs: current.translatedParagraphs.map((paragraph) => {
+        const replaced = replaceSuggestionHighlights(
+          paragraph.target,
+          paragraph.highlights?.translation || [],
+          id,
+          target,
+        );
+        return {
+          ...paragraph,
+          target: replaced.value,
+          highlights: {
+            source: (paragraph.highlights?.source || []).map((item) => item.suggestion_id === id
+              ? { ...item, target }
+              : item),
+            translation: replaced.highlights,
+          },
+        };
+      }),
+    } : current);
+  }
+
+  async function handleRejectSuggestion(id) {
+    if (/^[0-9a-f-]{36}$/i.test(id)) await rejectSuggestion(id);
+    await handleTranslateDocument();
   }
 
   return (
@@ -240,9 +391,10 @@ export default function DocumentWorkspace({ options, settingsProps, onAddTerm })
 
       {workflow === "translate" && translationResult && !processing && (
         <div className="document-result">
+          {translationResult.historyWarning && <div className="document-error"><AlertCircle size={18} /><span>{translationResult.historyWarning}</span><button onClick={retryHistorySave}>저장 재시도</button></div>}
           <header className="document-result-heading">
             <div className="result-success-icon"><CheckCircle2 size={28} /></div>
-            <div><span>문서 번역 완료</span><h2>{translationResult.document.name}</h2><p>{translationResult.document.pageCount}페이지 · {translationResult.document.wordCount.toLocaleString()}단어</p></div>
+            <div><span>문서 번역 완료</span><h2>{translationResult.document.name}</h2><p>{translationResult.document.paragraphCount ?? translationResult.translatedParagraphs.length}문단 · {translationResult.document.wordCount.toLocaleString()}단어</p></div>
           </header>
           <div className="document-result-stats">
             <div><Check size={20} /><span><strong>팀 용어 {translationResult.appliedTermCount}개</strong> 적용</span></div>
@@ -251,12 +403,29 @@ export default function DocumentWorkspace({ options, settingsProps, onAddTerm })
           <section className="translated-document">
             <div className="document-section-heading"><h3>번역 결과</h3><span>문단별 원문과 번역문</span></div>
             {translationResult.translatedParagraphs.map((paragraph) => (
-              <article key={paragraph.id}><p>{paragraph.source}</p><p>{paragraph.target}</p></article>
+              <article key={paragraph.id}>
+                <p><HighlightedText text={paragraph.source} highlights={paragraph.highlights?.source || []} /></p>
+                <p><HighlightedText text={paragraph.target} highlights={paragraph.highlights?.translation || []} /></p>
+              </article>
             ))}
           </section>
           <section className="detected-terms-section">
             <div className="document-section-heading"><h3>용어집 후보</h3><span>확인 후 팀 용어집에 추가할 수 있습니다.</span></div>
-            <div className="detected-term-list">{translationResult.suggestions.map((candidate) => <DetectedTermCard key={candidate.id} candidate={candidate} onAdd={onAddTerm} />)}</div>
+            {translationResult.suggestionWarning && <div className="document-error"><AlertCircle size={18} /><span>{translationResult.suggestionWarning}</span></div>}
+            {!translationResult.suggestionWarning && translationResult.suggestions.length === 0 && <p className="result-placeholder">새로 추천할 용어가 없습니다.</p>}
+            <div className="detected-term-list">
+              {translationResult.suggestions.map((candidate) => (
+                <DetectedTermCard
+                  key={candidate.id}
+                  candidate={candidate}
+                  onAdd={onAddTerm}
+                  onReject={handleRejectSuggestion}
+                  onResolved={resolveTranslationSuggestion}
+                  onTargetChange={handleSuggestionTargetChange}
+                  onPreview={onPreview}
+                />
+              ))}
+            </div>
           </section>
         </div>
       )}
@@ -269,7 +438,9 @@ export default function DocumentWorkspace({ options, settingsProps, onAddTerm })
           </header>
           <section className="detected-terms-section">
             <div className="document-section-heading"><h3>번역 불일치</h3><span>팀에서 사용할 최종 표현을 선택하세요.</span></div>
-            <div className="comparison-term-list">{comparisonResult.inconsistencies.map((item) => <ComparisonTermCard key={item.id} item={item} onAdd={onAddTerm} />)}</div>
+            {comparisonResult.suggestionWarning && <div className="document-error"><AlertCircle size={18} /><span>{comparisonResult.suggestionWarning}</span></div>}
+            {!comparisonResult.suggestionWarning && comparisonResult.inconsistencies.length === 0 && <p className="result-placeholder">서로 다르게 번역된 용어를 찾지 못했습니다.</p>}
+            <div className="comparison-term-list">{comparisonResult.inconsistencies.map((item) => <ComparisonTermCard key={item.id} item={item} onAdd={onAddTerm} onPreview={onPreview} />)}</div>
           </section>
         </div>
       )}

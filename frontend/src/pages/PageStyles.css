@@ -3,6 +3,36 @@
   position: relative;
 }
 
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.extraction-textarea {
+  min-height: 220px;
+}
+
+.extraction-review {
+  padding: 14px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.extraction-review > strong {
+  display: block;
+}
+
+.extraction-review ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
 .filter-search svg {
   position: absolute;
   top: 12px;
@@ -265,5 +295,162 @@
   .settings-section,
   .history-detail {
     padding: 20px;
+  }
+}
+.term-strategy-control {
+  flex-wrap: wrap;
+}
+
+.preference-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.preference-form-row > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strategy-preferences-section {
+  margin-top: 24px;
+}
+.invite-controls {
+  display: grid;
+  gap: 18px;
+}
+
+.copy-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copy-field code {
+  min-width: 180px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-primary);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+}
+
+/* Shared SaaS surface polish */
+.profile-card,
+.settings-section,
+.history-layout {
+  border-radius: var(--radius-lg);
+}
+
+.profile-card,
+.settings-section {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.content-grid > .profile-card {
+  animation: card-enter var(--duration-ui) var(--ease-out) both;
+}
+
+.content-grid > .profile-card:nth-child(2) { animation-delay: 45ms; }
+.content-grid > .profile-card:nth-child(3) { animation-delay: 90ms; }
+.content-grid > .profile-card:nth-child(4) { animation-delay: 135ms; }
+
+.profile-card-header {
+  margin-bottom: 24px;
+}
+
+.profile-identity h2,
+.section-heading h2,
+.history-detail-header h2 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.avatar {
+  background: var(--color-primary-soft);
+}
+
+.card-actions .icon-button {
+  width: 40px;
+  height: 40px;
+}
+
+.history-list {
+  background: var(--color-surface-subtle);
+}
+
+.history-item {
+  min-height: 88px;
+  transition: transform var(--duration-press) var(--ease-out), background-color var(--duration-fast) ease;
+}
+
+.history-item:active {
+  transform: scale(0.99);
+}
+
+.history-item.active {
+  background: var(--color-surface);
+  box-shadow: inset 3px 0 var(--color-primary);
+}
+
+.translation-detail-block p,
+.preference-form-row,
+.copy-field code {
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.extraction-review {
+  border-color: #b8dcff;
+  border-radius: var(--radius-md);
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .profile-card {
+    transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) ease;
+  }
+
+  .profile-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-border-strong);
+  }
+
+  .history-item:hover {
+    background: var(--color-surface);
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .page-header-actions .button {
+    width: 100%;
+  }
+
+  .toolbar-group,
+  .filter-search {
+    width: 100%;
   }
 }

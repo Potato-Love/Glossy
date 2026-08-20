@@ -1,7 +1,10 @@
 import unittest
 
-from app.schemas import TermRead
+from uuid import uuid4
+
+from app.schemas import AppliedTerm, TermRead, TermSuggestionRead
 from app.services.glossary_rules import (
+    build_translation_highlights,
     find_applied_terms,
     protect_glossary_terms,
     restore_glossary_terms,
@@ -42,6 +45,27 @@ class GlossaryRulesTest(unittest.TestCase):
         self.assertEqual([item.source for item in applied], ["QA", "글로시"])
         self.assertEqual(applied[0].target, "QA")
         self.assertEqual(applied[1].target, "Glossy")
+
+    def test_highlights_every_applied_and_suggested_occurrence(self) -> None:
+        suggestion_id = uuid4()
+        highlights = build_translation_highlights(
+            "Glossy와 풍차돌리기, 풍차돌리기",
+            "Glossy and Poongchadoligi, Poongchadoligi",
+            [AppliedTerm(source="Glossy", target="Glossy", mode="preserve")],
+            [
+                TermSuggestionRead(
+                    id=suggestion_id,
+                    document_text="풍차돌리기",
+                    source="풍차돌리기",
+                    target="Poongchadoligi",
+                    mode="translate",
+                )
+            ],
+        )
+
+        self.assertEqual([item.state for item in highlights.source], ["applied", "suggested", "suggested"])
+        self.assertEqual([item.state for item in highlights.translation], ["applied", "suggested", "suggested"])
+        self.assertTrue(all(item.suggestion_id == suggestion_id for item in highlights.translation[1:]))
 
 
 if __name__ == "__main__":

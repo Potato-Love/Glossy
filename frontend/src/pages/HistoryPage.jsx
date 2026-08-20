@@ -1,15 +1,27 @@
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EmptyState from "../components/common/EmptyState";
 import Modal from "../components/common/Modal";
 import { useAppData } from "../context/appData";
 import "./PageStyles.css";
 
 export default function HistoryPage() {
-  const { currentUser, history, deleteHistory } = useAppData();
+  const {
+    currentUser,
+    history,
+    deleteHistory,
+    refreshHistory,
+    historyLoading,
+    historyError,
+  } = useAppData();
   const [scope, setScope] = useState("personal");
   const [selectedId, setSelectedId] = useState(history[0]?.id ?? "");
   const [deleting, setDeleting] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
 
   const visibleHistory = scope === "personal"
     ? history.filter((item) => item.executorId === currentUser.id)
@@ -28,6 +40,9 @@ export default function HistoryPage() {
           <button className={scope === "team" ? "active" : ""} onClick={() => setScope("team")}>팀 히스토리</button>
         </div>
       </header>
+
+      {historyError && <div className="document-error"><span>{historyError}</span><button onClick={refreshHistory}>다시 시도</button></div>}
+      {historyLoading && !history.length && <section className="surface"><p className="field-hint">번역 기록을 불러오는 중입니다.</p></section>}
 
       {visibleHistory.length ? (
         <section className="history-layout">
@@ -64,9 +79,18 @@ export default function HistoryPage() {
         <Modal
           title="히스토리 삭제"
           onClose={() => setDeleting(null)}
-          footer={<><button className="button" onClick={() => setDeleting(null)}>취소</button><button className="button danger" onClick={() => { deleteHistory(deleting.id); setDeleting(null); }}>삭제</button></>}
+          footer={<><button className="button" onClick={() => setDeleting(null)}>취소</button><button className="button danger" onClick={async () => {
+            setDeleteError("");
+            try {
+              await deleteHistory(deleting.id);
+              setDeleting(null);
+            } catch (error) {
+              setDeleteError(error instanceof Error ? error.message : "번역 기록을 삭제하지 못했습니다.");
+            }
+          }}>삭제</button></>}
         >
           <p>이 번역 기록을 삭제할까요? 삭제한 기록은 복구할 수 없습니다.</p>
+          {deleteError && <p className="form-error">{deleteError}</p>}
         </Modal>
       )}
     </div>

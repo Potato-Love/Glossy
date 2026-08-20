@@ -2,7 +2,14 @@ import re
 from dataclasses import dataclass
 from uuid import UUID
 
-from app.schemas import AppliedTerm, TermMode, TermRead
+from app.schemas import (
+    AppliedTerm,
+    TermMode,
+    TermRead,
+    TermSuggestionRead,
+    TextHighlight,
+    TranslationHighlights,
+)
 
 
 @dataclass(frozen=True)
@@ -64,6 +71,91 @@ def restore_glossary_terms(translated_text: str, protected_terms: list[Protected
         restored = restored.replace(term.marker, term.replacement)
         restored = restored.replace(term.marker.replace("_", " "), term.replacement)
     return restored
+
+
+def build_translation_highlights(
+    source_text: str,
+    translation: str,
+    applied_terms: list[AppliedTerm],
+    suggestions: list[TermSuggestionRead],
+) -> TranslationHighlights:
+    source_highlights: list[TextHighlight] = []
+    translation_highlights: list[TextHighlight] = []
+
+    for term in applied_terms:
+        target = term.target or term.source
+        source_highlights.extend(
+            _highlights_for_text(source_text, term.source, "applied", term.source, target, term_id=term.id)
+        )
+        translation_highlights.extend(
+            _highlights_for_text(translation, target, "applied", term.source, target, term_id=term.id)
+        )
+
+    for suggestion in suggestions:
+        target = suggestion.source if suggestion.mode == "preserve" else suggestion.target
+        if not target:
+            continue
+        source_highlights.extend(
+            _highlights_for_text(
+                source_text,
+                suggestion.source,
+                "suggested",
+                suggestion.source,
+                target,
+                suggestion_id=suggestion.id,
+            )
+        )
+        translation_highlights.extend(
+            _highlights_for_text(
+                translation,
+                target,
+                "suggested",
+                suggestion.source,
+                target,
+                suggestion_id=suggestion.id,
+            )
+        )
+
+    return TranslationHighlights(
+        source=_remove_overlaps(source_highlights),
+        translation=_remove_overlaps(translation_highlights),
+    )
+
+
+def _highlights_for_text(
+    text: str,
+    value: str,
+    state: str,
+    source: str,
+    target: str,
+    term_id: UUID | None = None,
+    suggestion_id: UUID | None = None,
+) -> list[TextHighlight]:
+    return [
+        TextHighlight(
+            start=match.start(),
+            end=match.end(),
+            state=state,
+            source=source,
+            target=target,
+            term_id=term_id,
+            suggestion_id=suggestion_id,
+        )
+        for match in _term_pattern(value).finditer(text)
+    ]
+
+
+def _remove_overlaps(highlights: list[TextHighlight]) -> list[TextHighlight]:
+    prioritized = sorted(
+        highlights,
+        key=lambda item: (0 if item.state == "applied" else 1, -(item.end - item.start), item.start),
+    )
+    accepted: list[TextHighlight] = []
+    for item in prioritized:
+        if any(item.start < current.end and item.end > current.start for current in accepted):
+            continue
+        accepted.append(item)
+    return sorted(accepted, key=lambda item: item.start)
 
 
 def _contains_term(source_text: str, term: str) -> bool:

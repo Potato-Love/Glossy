@@ -15,14 +15,12 @@ Frontend should call the deployed backend through Vite environment variables:
 
 ```txt
 VITE_API_URL=https://your-backend-host.example.com/api/v1
-VITE_USE_MOCK_DOCUMENTS=false
 ```
 
 For local development:
 
 ```txt
 VITE_API_URL=http://localhost:8000/api/v1
-VITE_USE_MOCK_DOCUMENTS=false
 ```
 
 Backend must include the frontend origin in `CORS_ORIGINS`:
@@ -30,6 +28,11 @@ Backend must include the frontend origin in `CORS_ORIGINS`:
 ```txt
 CORS_ORIGINS=http://localhost:5173,https://glossy-prototype.vercel.app
 ```
+
+After login, store the returned session token and send it as a Bearer token.
+Send the selected team in `X-Team-Id` for every glossary, recipient, translation,
+document, image, suggestion, and strategy request. A `401` response must clear
+the local session and return the user to `/login`.
 
 The current `develop` prototype exposes these language codes:
 
@@ -65,16 +68,8 @@ Main translate button:
 POST /translations/translate
 ```
 
-The current text translation page still uses local mock state. Connecting that
-button requires a frontend change in `frontend/src/pages/TranslatePage.jsx`.
-Document and image modes can be connected without frontend file changes because
-`frontend/src/api/documents.js` already uses `VITE_API_URL`.
-
-Comparison screen:
-
-```http
-POST /translations/compare
-```
+Text, document, and image translation modes call the backend URL
+configured by `VITE_API_URL`.
 
 Current document workspace endpoints expected by the frontend:
 
@@ -100,6 +95,23 @@ GET /contacts
 POST /contacts
 PATCH /contacts/{contact_id}
 DELETE /contacts/{contact_id}
+POST /contacts/extract
 ```
+
+Use `GET /contacts?team_key={teamId}` and store `country`, `tone_style`, and
+`communication_preferences` as separate fields. Pass the returned UUID as
+`contact_id` for text translation or `recipientId` for document/image uploads.
+
+History screen:
+
+```http
+GET /history?scope=personal|team
+POST /history
+PATCH /history/{history_id}
+DELETE /history/{history_id}
+```
+
+Translation endpoints save history automatically and return a history ID. Use
+`PATCH /history/{history_id}` after the user edits a translated result.
 
 Full request and response examples are in `API_CONTRACT.md`.

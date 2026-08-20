@@ -47,14 +47,17 @@ class SupabaseSetupTest(unittest.TestCase):
             describe_connection_url("postgresql://postgres@db.ref.supabase.co:5432/postgres"),
         )
 
-    def test_seed_migration_is_opt_in(self) -> None:
-        without_seed = [path.name for path in migration_files(include_seed=False)]
-        with_seed = [path.name for path in migration_files(include_seed=True)]
+    def test_migration_files_only_include_schema_migrations(self) -> None:
+        files = [path.name for path in migration_files()]
 
-        self.assertIn("001_init.sql", without_seed)
-        self.assertIn("003_expand_language_codes.sql", without_seed)
-        self.assertNotIn("002_seed_demo.sql", without_seed)
-        self.assertIn("002_seed_demo.sql", with_seed)
+        self.assertIn("001_init.sql", files)
+        self.assertIn("003_expand_language_codes.sql", files)
+        self.assertIn("004_glossary_context.sql", files)
+        self.assertIn("005_translation_strategy_preferences.sql", files)
+        self.assertIn("006_recipient_translation_context.sql", files)
+        self.assertIn("007_auth_and_teams.sql", files)
+        self.assertIn("008_translation_history.sql", files)
+        self.assertFalse(any("seed" in filename.lower() for filename in files))
 
     def test_checksum_is_stable(self) -> None:
         self.assertEqual(checksum_sql("select 1;"), checksum_sql("select 1;"))

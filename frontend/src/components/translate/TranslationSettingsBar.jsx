@@ -1,14 +1,16 @@
 import { ArrowLeftRight, BookOpenCheck } from "lucide-react";
-import { languages } from "../../data/mockData";
+import { languages } from "../../data/referenceData";
 
 export default function TranslationSettingsBar({
   sourceLanguage,
   targetLanguage,
-  glossaryEnabled,
+  teamGlossaryEnabled,
+  personalGlossaryEnabled,
   onSourceLanguageChange,
   onTargetLanguageChange,
   onSwapLanguages,
-  onGlossaryChange,
+  onTeamGlossaryChange,
+  onPersonalGlossaryChange,
 }) {
   return (
     <div className="file-translation-settings">
@@ -21,11 +23,18 @@ export default function TranslationSettingsBar({
           {languages.map((language) => <option key={language.code} value={language.code}>{language.label}</option>)}
         </select>
       </div>
-      <label className="glossary-toggle">
-        <span><BookOpenCheck size={16} /> 용어집 적용</span>
-        <input type="checkbox" checked={glossaryEnabled} onChange={(event) => onGlossaryChange(event.target.checked)} />
-        <i aria-hidden="true" />
-      </label>
+      <div className="glossary-toggles">
+        <label className="glossary-toggle">
+          <span><BookOpenCheck size={16} /> 팀 용어집</span>
+          <input type="checkbox" checked={teamGlossaryEnabled} onChange={(event) => onTeamGlossaryChange(event.target.checked)} />
+          <i aria-hidden="true" />
+        </label>
+        <label className="glossary-toggle">
+          <span>개인 용어집</span>
+          <input type="checkbox" checked={personalGlossaryEnabled} onChange={(event) => onPersonalGlossaryChange(event.target.checked)} />
+          <i aria-hidden="true" />
+        </label>
+      </div>
     </div>
   );
 }

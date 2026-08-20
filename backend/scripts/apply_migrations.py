@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import asyncio
 import hashlib
 import sys
@@ -29,11 +28,8 @@ def checksum_sql(sql: str) -> str:
     return hashlib.sha256(sql.encode("utf-8")).hexdigest()
 
 
-def migration_files(include_seed: bool) -> list[Path]:
-    files = sorted(MIGRATIONS_DIR.glob("*.sql"))
-    if include_seed:
-        return files
-    return [path for path in files if "seed" not in path.name.lower()]
+def migration_files() -> list[Path]:
+    return sorted(MIGRATIONS_DIR.glob("*.sql"))
 
 
 def describe_connection_url(database_url: str) -> str:
@@ -80,20 +76,12 @@ async def apply_file(connection: asyncpg.Connection, path: Path) -> str:
 async def main() -> int:
     from app.core.config import get_settings
 
-    parser = argparse.ArgumentParser(description="Apply Glossy PostgreSQL migrations.")
-    parser.add_argument(
-        "--seed",
-        action="store_true",
-        help="also apply demo seed migrations such as 002_seed_demo.sql",
-    )
-    args = parser.parse_args()
-
     settings = get_settings()
     if not settings.database_url:
         print("DATABASE_URL is not set. Copy env.example to .env and fill it in.")
         return 2
 
-    files = migration_files(include_seed=args.seed)
+    files = migration_files()
     if not files:
         print("No migration files found.")
         return 0

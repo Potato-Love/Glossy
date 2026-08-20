@@ -32,7 +32,7 @@ async def extract_text_from_upload(file: UploadFile) -> str:
     return _decode_text(payload)
 
 
-def split_into_paragraphs(text: str, limit: int = 8) -> list[str]:
+def split_into_paragraphs(text: str, limit: int | None = None) -> list[str]:
     normalized = re.sub(r"\r\n?", "\n", text).strip()
     if not normalized:
         return []
@@ -50,13 +50,41 @@ def split_into_paragraphs(text: str, limit: int = 8) -> list[str]:
     for paragraph in paragraphs:
         chunks.extend(_chunk_by_length(paragraph, MAX_PARAGRAPH_CHARS))
 
-    return chunks[:limit]
+    return chunks if limit is None else chunks[:limit]
 
 
 def _chunk_by_length(text: str, max_chars: int) -> list[str]:
     if len(text) <= max_chars:
         return [text]
-    return [text[i : i + max_chars] for i in range(0, len(text), max_chars)]
+
+    chunks: list[str] = []
+    remaining = text.strip()
+    while len(remaining) > max_chars:
+        window = remaining[: max_chars + 1]
+        boundary = max(
+            window.rfind(". "),
+            window.rfind("? "),
+            window.rfind("! "),
+            window.rfind("。"),
+            window.rfind("？"),
+            window.rfind("！"),
+            window.rfind(" "),
+        )
+        if boundary < max_chars // 2:
+            boundary = max_chars
+        elif window[boundary : boundary + 2] in {". ", "? ", "! "}:
+            boundary += 1
+        else:
+            boundary += 1
+
+        chunk = remaining[:boundary].strip()
+        if chunk:
+            chunks.append(chunk)
+        remaining = remaining[boundary:].strip()
+
+    if remaining:
+        chunks.append(remaining)
+    return chunks
 
 
 def count_words(text: str) -> int:
